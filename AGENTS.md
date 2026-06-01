@@ -33,6 +33,15 @@ git status --short --branch
 
 Adjust the commit message so it clearly describes the actual change.
 
+## GitHub Desktop
+
+The user has GitHub Desktop installed. It is useful for human review, but agents should still use command-line Git for routine updates.
+
+- Use GitHub Desktop as a visual aid when the user wants to inspect changed files, commit history, or push status.
+- Do not rely on GitHub Desktop being open before making updates.
+- If command-line Git authentication fails, mention that GitHub Desktop may help the user confirm login status.
+- Even when GitHub Desktop is available, completed updates should still be committed and pushed to `origin/main`.
+
 ## Validation
 
 This is a static HTML project. For most text, default value, and simple UI changes:
