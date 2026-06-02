@@ -400,6 +400,45 @@
       gap: 8px;
     }
 
+    .installment-note-panel {
+      margin-top: 18px;
+      padding: 16px 18px;
+    }
+
+    .installment-note-panel h3 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .installment-note-panel p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .settled-installments {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .settled-installments li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 8px;
+      border-top: 1px solid #edf0ed;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .settled-installments strong {
+      color: var(--ink);
+    }
+
     .market-metric.highlight {
       background: var(--soft);
     }
@@ -1330,6 +1369,16 @@
             <div class="empty-row" id="installmentEmpty">還沒有信用卡分期紀錄。</div>
           </div>
         </section>
+      </section>
+
+      <section class="panel installment-note-panel" aria-label="已到最後一期補充資訊">
+        <h3>已到最後一期，不列入未到期總額</h3>
+        <p>以下三筆為 115/05/14 帳單的 06/06 期，代表本期已是最後一期，因此只作為補充資訊保存。</p>
+        <ul class="settled-installments">
+          <li><strong>元大人壽１１４</strong><span>13,863 元，06/06 期，本期 2,310 元</span></li>
+          <li><strong>指定卡保費分期</strong><span>38,671 元，06/06 期，本期 6,445 元</span></li>
+          <li><strong>遠雄續期保費８</strong><span>11,802 元，06/06 期，本期 1,967 元</span></li>
+        </ul>
       </section>
     </section>
   </main>
