@@ -338,6 +338,68 @@
       font-size: 18px;
     }
 
+    .finance-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .finance-metric {
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .finance-metric span {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .finance-metric strong {
+      display: block;
+      font-size: clamp(22px, 3vw, 32px);
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    .finance-layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 360px) 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .finance-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .finance-form .field {
+      margin-bottom: 0;
+    }
+
+    .empty-row {
+      padding: 28px 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .installment-table th:first-child,
+    .installment-table td:first-child {
+      text-align: left;
+    }
+
+    .installment-actions {
+      display: inline-flex;
+      justify-content: end;
+      gap: 8px;
+    }
+
     .market-metric.highlight {
       background: var(--soft);
     }
@@ -785,6 +847,7 @@
       }
 
       .presale-grid,
+      .finance-grid,
       .unit-list {
         grid-template-columns: 1fr 1fr;
       }
@@ -794,7 +857,8 @@
       }
 
       .market-layout,
-      .market-summary {
+      .market-summary,
+      .finance-layout {
         grid-template-columns: 1fr;
       }
 
@@ -848,6 +912,7 @@
 
     @media (max-width: 560px) {
       .presale-grid,
+      .finance-grid,
       .unit-list {
         grid-template-columns: 1fr;
       }
@@ -881,6 +946,7 @@
     <nav class="tabs" aria-label="頁面分頁">
       <button class="tab-button active" type="button" data-tab="loanTab">房貸試算</button>
       <button class="tab-button" type="button" data-tab="presaleTab">預售屋資料</button>
+      <button class="tab-button" type="button" data-tab="installmentTab">信用卡分期</button>
     </nav>
 
     <header class="app-header">
@@ -1186,6 +1252,86 @@
         </section>
       </div>
     </section>
+
+    <section class="tab-panel" id="installmentTab" aria-label="信用卡未到期分期">
+      <div class="finance-grid">
+        <div class="finance-metric">
+          <span>未到期總額</span>
+          <strong id="installmentRemainingTotal">$0</strong>
+        </div>
+        <div class="finance-metric">
+          <span>每月分期合計</span>
+          <strong id="installmentMonthlyTotal">$0</strong>
+        </div>
+        <div class="finance-metric">
+          <span>分期筆數</span>
+          <strong id="installmentCount">0</strong>
+        </div>
+      </div>
+
+      <section class="finance-layout">
+        <form class="panel form-panel finance-form" id="installmentForm">
+          <div class="field">
+            <label for="installmentCard">信用卡</label>
+            <input id="installmentCard" type="text" placeholder="例如：玉山 Ubear">
+          </div>
+
+          <div class="field">
+            <label for="installmentItem">分期項目</label>
+            <input id="installmentItem" type="text" placeholder="例如：筆電、保費">
+          </div>
+
+          <div class="field">
+            <label for="installmentAmount">總金額</label>
+            <input id="installmentAmount" type="text" inputmode="numeric" placeholder="例如：60,000">
+            <div class="help">單位：新台幣元</div>
+          </div>
+
+          <div class="inline">
+            <div class="field">
+              <label for="installmentTerms">總期數</label>
+              <input id="installmentTerms" type="number" min="1" step="1" value="12" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="installmentPaidTerms">已繳期數</label>
+              <input id="installmentPaidTerms" type="number" min="0" step="1" value="0" inputmode="numeric">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="installmentNextDue">下一期月份</label>
+            <input id="installmentNextDue" type="month">
+          </div>
+
+          <button class="primary-button" type="submit">新增分期</button>
+          <div class="error" id="installmentError"></div>
+        </form>
+
+        <section class="panel table-panel" aria-label="信用卡未到期分期列表">
+          <div class="table-head">
+            <h2>未到期分期</h2>
+            <span class="help" id="installmentNote">尚未新增</span>
+          </div>
+          <div class="table-wrap">
+            <table class="installment-table">
+              <thead>
+                <tr>
+                  <th>項目</th>
+                  <th>信用卡</th>
+                  <th>每期</th>
+                  <th>剩餘期數</th>
+                  <th>未到期</th>
+                  <th>下一期</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="installmentBody"></tbody>
+            </table>
+            <div class="empty-row" id="installmentEmpty">還沒有信用卡分期紀錄。</div>
+          </div>
+        </section>
+      </section>
+    </section>
   </main>
 
   <script>
@@ -1200,6 +1346,14 @@
     const marketUnitPriceInput = document.getElementById("marketUnitPrice");
     const parkingPriceInput = document.getElementById("parkingPrice");
     const saveMarketPriceButton = document.getElementById("saveMarketPrice");
+    const installmentForm = document.getElementById("installmentForm");
+    const installmentCardInput = document.getElementById("installmentCard");
+    const installmentItemInput = document.getElementById("installmentItem");
+    const installmentAmountInput = document.getElementById("installmentAmount");
+    const installmentTermsInput = document.getElementById("installmentTerms");
+    const installmentPaidTermsInput = document.getElementById("installmentPaidTerms");
+    const installmentNextDueInput = document.getElementById("installmentNextDue");
+    const installmentError = document.getElementById("installmentError");
     const pageTitle = document.getElementById("pageTitle");
     const pageSubtitle = document.getElementById("pageSubtitle");
     const tabButtons = document.querySelectorAll(".tab-button");
@@ -1237,11 +1391,18 @@
       principalBar: document.getElementById("principalBar"),
       interestBar: document.getElementById("interestBar"),
       scheduleBody: document.getElementById("scheduleBody"),
-      tableNote: document.getElementById("tableNote")
+      tableNote: document.getElementById("tableNote"),
+      installmentRemainingTotal: document.getElementById("installmentRemainingTotal"),
+      installmentMonthlyTotal: document.getElementById("installmentMonthlyTotal"),
+      installmentCount: document.getElementById("installmentCount"),
+      installmentNote: document.getElementById("installmentNote"),
+      installmentBody: document.getElementById("installmentBody"),
+      installmentEmpty: document.getElementById("installmentEmpty")
     };
 
     const storageKey = "mortgageCalculatorSavedPlans";
     const marketStorageKey = "presaleCurrentMarketPrice";
+    const installmentStorageKey = "personalFinanceCreditCardInstallments";
     const presalePing = 20.78;
     const originalUnitPrice = 63.91;
     const originalParkingPrice = 240;
@@ -1256,10 +1417,15 @@
       presaleTab: {
         title: "預售屋資料",
         subtitle: "整理付款時程、戶別資料、目前市價與出售獲利，快速掌握這間預售屋的資金狀況。"
+      },
+      installmentTab: {
+        title: "信用卡未到期分期",
+        subtitle: "記錄每張信用卡尚未到期的分期，掌握每月固定支出與剩餘未繳金額。"
       }
     };
     let savedPlans = loadSavedPlans();
     let savedMarketPrice = loadSavedMarketPrice();
+    let creditCardInstallments = loadCreditCardInstallments();
     let latestResult = null;
 
     const money = new Intl.NumberFormat("zh-TW", {
@@ -1281,6 +1447,15 @@
       const cleanValue = input.value.replace(/[^\d]/g, "");
       input.value = cleanValue ? integer.format(Number(cleanValue)) : "";
       if (cursorAtEnd) input.setSelectionRange(input.value.length, input.value.length);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     function getTermYears() {
@@ -1316,6 +1491,144 @@
 
     function persistSavedPlans() {
       localStorage.setItem(storageKey, JSON.stringify(savedPlans));
+    }
+
+    function loadCreditCardInstallments() {
+      try {
+        return JSON.parse(localStorage.getItem(installmentStorageKey)) || [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function persistCreditCardInstallments() {
+      localStorage.setItem(installmentStorageKey, JSON.stringify(creditCardInstallments));
+    }
+
+    function showInstallmentError(message) {
+      installmentError.textContent = message;
+      installmentError.classList.add("show");
+    }
+
+    function clearInstallmentError() {
+      installmentError.textContent = "";
+      installmentError.classList.remove("show");
+    }
+
+    function getDefaultNextDueMonth() {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      return `${now.getFullYear()}-${month}`;
+    }
+
+    function addMonths(monthValue, count) {
+      if (!monthValue) return "";
+      const [year, month] = monthValue.split("-").map(Number);
+      if (!year || !month) return "";
+      const date = new Date(year, month - 1 + count, 1);
+      return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function renderCreditCardInstallments() {
+      const activeInstallments = creditCardInstallments.filter((item) => item.totalTerms > item.paidTerms);
+      const summary = activeInstallments.reduce((acc, item) => {
+        const monthlyAmount = item.totalAmount / item.totalTerms;
+        const remainingTerms = item.totalTerms - item.paidTerms;
+        acc.monthlyTotal += monthlyAmount;
+        acc.remainingTotal += monthlyAmount * remainingTerms;
+        return acc;
+      }, { monthlyTotal: 0, remainingTotal: 0 });
+
+      fields.installmentRemainingTotal.textContent = money.format(summary.remainingTotal);
+      fields.installmentMonthlyTotal.textContent = money.format(summary.monthlyTotal);
+      fields.installmentCount.textContent = integer.format(activeInstallments.length);
+      fields.installmentNote.textContent = activeInstallments.length
+        ? `共 ${integer.format(activeInstallments.length)} 筆`
+        : "尚未新增";
+      fields.installmentEmpty.style.display = activeInstallments.length ? "none" : "block";
+
+      fields.installmentBody.innerHTML = activeInstallments.map((item) => {
+        const monthlyAmount = item.totalAmount / item.totalTerms;
+        const remainingTerms = item.totalTerms - item.paidTerms;
+        const remainingAmount = monthlyAmount * remainingTerms;
+        const finalDue = addMonths(item.nextDue, remainingTerms - 1);
+        return `
+          <tr>
+            <td>${escapeHtml(item.name)}</td>
+            <td>${escapeHtml(item.card)}</td>
+            <td>${money.format(monthlyAmount)}</td>
+            <td>${integer.format(remainingTerms)} / ${integer.format(item.totalTerms)}</td>
+            <td>${money.format(remainingAmount)}</td>
+            <td>${item.nextDue.replace("-", "/")} - ${finalDue}</td>
+            <td>
+              <span class="installment-actions">
+                <button class="secondary-button" type="button" data-installment-action="pay" data-id="${item.id}">繳一期</button>
+                <button class="danger-button" type="button" data-installment-action="delete" data-id="${item.id}">刪除</button>
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function saveCreditCardInstallment(event) {
+      event.preventDefault();
+      const totalAmount = parseAmount(installmentAmountInput.value);
+      const totalTerms = Number(installmentTermsInput.value);
+      const paidTerms = Number(installmentPaidTermsInput.value);
+      const card = installmentCardInput.value.trim() || "未命名信用卡";
+      const name = installmentItemInput.value.trim() || "未命名分期";
+      const nextDue = installmentNextDueInput.value || getDefaultNextDueMonth();
+
+      if (!totalAmount || totalAmount <= 0) {
+        showInstallmentError("請輸入大於 0 的總金額。");
+        return;
+      }
+      if (!totalTerms || totalTerms <= 0) {
+        showInstallmentError("請輸入大於 0 的總期數。");
+        return;
+      }
+      if (paidTerms < 0 || paidTerms >= totalTerms) {
+        showInstallmentError("已繳期數需小於總期數。");
+        return;
+      }
+
+      clearInstallmentError();
+      creditCardInstallments.unshift({
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        card,
+        name,
+        totalAmount,
+        totalTerms,
+        paidTerms,
+        nextDue,
+        createdAt: new Date().toISOString()
+      });
+      persistCreditCardInstallments();
+      renderCreditCardInstallments();
+      installmentForm.reset();
+      installmentTermsInput.value = "12";
+      installmentPaidTermsInput.value = "0";
+      installmentNextDueInput.value = getDefaultNextDueMonth();
+    }
+
+    function updateCreditCardInstallment(id, action) {
+      const index = creditCardInstallments.findIndex((item) => item.id === id);
+      if (index === -1) return;
+
+      if (action === "delete") {
+        creditCardInstallments.splice(index, 1);
+      }
+      if (action === "pay") {
+        creditCardInstallments[index].paidTerms += 1;
+        creditCardInstallments[index].nextDue = addMonths(creditCardInstallments[index].nextDue, 1).replace("/", "-");
+        if (creditCardInstallments[index].paidTerms >= creditCardInstallments[index].totalTerms) {
+          creditCardInstallments.splice(index, 1);
+        }
+      }
+
+      persistCreditCardInstallments();
+      renderCreditCardInstallments();
     }
 
     function loadSavedMarketPrice() {
@@ -1613,6 +1926,9 @@
       formatNumericInput(amountInput);
       calculate();
     });
+    installmentAmountInput.addEventListener("input", () => {
+      formatNumericInput(installmentAmountInput);
+    });
     marketUnitPriceInput.addEventListener("input", () => {
       saveMarketPrice();
     });
@@ -1642,6 +1958,12 @@
     });
     savePlanButton.addEventListener("click", saveCurrentPlan);
     saveMarketPriceButton.addEventListener("click", saveMarketPrice);
+    installmentForm.addEventListener("submit", saveCreditCardInstallment);
+    fields.installmentBody.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-installment-action]");
+      if (!button) return;
+      updateCreditCardInstallment(button.dataset.id, button.dataset.installmentAction);
+    });
     fields.savedPlans.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
@@ -1652,6 +1974,8 @@
     });
     renderSavedPlans();
     renderSavedMarketPrice();
+    installmentNextDueInput.value = getDefaultNextDueMonth();
+    renderCreditCardInstallments();
     calculate();
   </script>
 </body>
