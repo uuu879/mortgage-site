@@ -1404,6 +1404,7 @@
     const marketStorageKey = "presaleCurrentMarketPrice";
     const installmentStorageKey = "personalFinanceCreditCardInstallments";
     const installmentImportKey = "personalFinanceCreditCardInstallmentsImported20260514";
+    const accessoryInstallmentImportKey = "personalFinanceCreditCardInstallmentsImportedAccessories20260602";
     const defaultCreditCardInstallments = [
       {
         id: "seed-20260514-pxmart-taitung",
@@ -1464,6 +1465,32 @@
         nextDue: "2026-06",
         source: "115/05/14 帳單，02/06 期，未到期 2,036 元",
         createdAt: "2026-05-14T00:00:00.000Z"
+      }
+    ];
+    const accessoryCreditCardInstallments = [
+      {
+        id: "seed-20260602-bag",
+        card: "信用卡",
+        name: "包包",
+        totalAmount: 9240,
+        monthlyAmount: 1540,
+        totalTerms: 6,
+        paidTerms: 1,
+        nextDue: "2026-06",
+        source: "使用者提供，01/06 期，每期 1,540 元，剩 5 期",
+        createdAt: "2026-06-02T00:00:00.000Z"
+      },
+      {
+        id: "seed-20260602-watch",
+        card: "信用卡",
+        name: "手錶",
+        totalAmount: 8892,
+        monthlyAmount: 741,
+        totalTerms: 12,
+        paidTerms: 8,
+        nextDue: "2026-06",
+        source: "使用者提供，08/12 期，每期 741 元，剩 4 期",
+        createdAt: "2026-06-02T00:00:00.000Z"
       }
     ];
     const presalePing = 20.78;
@@ -1559,22 +1586,31 @@
     function loadCreditCardInstallments() {
       try {
         const saved = JSON.parse(localStorage.getItem(installmentStorageKey) || "[]");
-        const records = Array.isArray(saved) ? saved : [];
+        let records = Array.isArray(saved) ? saved : [];
         const imported = localStorage.getItem(installmentImportKey) === "true";
+        const accessoryImported = localStorage.getItem(accessoryInstallmentImportKey) === "true";
 
         if (!imported) {
-          const existingIds = new Set(records.map((item) => item.id));
-          const importedRecords = defaultCreditCardInstallments.filter((item) => !existingIds.has(item.id));
-          const mergedRecords = [...importedRecords, ...records];
+          records = mergeInstallmentRecords(records, defaultCreditCardInstallments);
           localStorage.setItem(installmentImportKey, "true");
-          localStorage.setItem(installmentStorageKey, JSON.stringify(mergedRecords));
-          return mergedRecords;
         }
 
+        if (!accessoryImported) {
+          records = mergeInstallmentRecords(records, accessoryCreditCardInstallments);
+          localStorage.setItem(accessoryInstallmentImportKey, "true");
+        }
+
+        localStorage.setItem(installmentStorageKey, JSON.stringify(records));
         return records;
       } catch (error) {
-        return defaultCreditCardInstallments;
+        return [...accessoryCreditCardInstallments, ...defaultCreditCardInstallments];
       }
+    }
+
+    function mergeInstallmentRecords(records, importedRecords) {
+      const existingIds = new Set(records.map((item) => item.id));
+      const newRecords = importedRecords.filter((item) => !existingIds.has(item.id));
+      return [...newRecords, ...records];
     }
 
     function persistCreditCardInstallments() {
