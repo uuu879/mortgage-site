@@ -1403,6 +1403,69 @@
     const storageKey = "mortgageCalculatorSavedPlans";
     const marketStorageKey = "presaleCurrentMarketPrice";
     const installmentStorageKey = "personalFinanceCreditCardInstallments";
+    const installmentImportKey = "personalFinanceCreditCardInstallmentsImported20260514";
+    const defaultCreditCardInstallments = [
+      {
+        id: "seed-20260514-pxmart-taitung",
+        card: "信用卡",
+        name: "大全聯台東店",
+        totalAmount: 34122,
+        monthlyAmount: 5687,
+        totalTerms: 6,
+        paidTerms: 2,
+        nextDue: "2026-06",
+        source: "115/05/14 帳單，02/06 期，未到期 22,748 元",
+        createdAt: "2026-05-14T00:00:00.000Z"
+      },
+      {
+        id: "seed-20260514-fubon-life-30",
+        card: "信用卡",
+        name: "富邦人壽３０＊",
+        totalAmount: 2689,
+        monthlyAmount: 224,
+        totalTerms: 12,
+        paidTerms: 11,
+        nextDue: "2026-06",
+        source: "115/05/14 帳單，11/12 期，未到期 224 元",
+        createdAt: "2026-05-14T00:00:00.000Z"
+      },
+      {
+        id: "seed-20260514-fubon-life-10",
+        card: "信用卡",
+        name: "富邦人壽１０＊",
+        totalAmount: 2756,
+        monthlyAmount: 229,
+        totalTerms: 12,
+        paidTerms: 7,
+        nextDue: "2026-06",
+        source: "115/05/14 帳單，07/12 期，未到期 1,145 元",
+        createdAt: "2026-05-14T00:00:00.000Z"
+      },
+      {
+        id: "seed-20260514-kgi-life-3838",
+        card: "信用卡",
+        name: "凱基人壽保險 3,838",
+        totalAmount: 3838,
+        monthlyAmount: 639,
+        totalTerms: 6,
+        paidTerms: 5,
+        nextDue: "2026-06",
+        source: "115/05/14 帳單，05/06 期，未到期 639 元",
+        createdAt: "2026-05-14T00:00:00.000Z"
+      },
+      {
+        id: "seed-20260514-kgi-life-3057",
+        card: "信用卡",
+        name: "凱基人壽保險 3,057",
+        totalAmount: 3057,
+        monthlyAmount: 509,
+        totalTerms: 6,
+        paidTerms: 2,
+        nextDue: "2026-06",
+        source: "115/05/14 帳單，02/06 期，未到期 2,036 元",
+        createdAt: "2026-05-14T00:00:00.000Z"
+      }
+    ];
     const presalePing = 20.78;
     const originalUnitPrice = 63.91;
     const originalParkingPrice = 240;
@@ -1495,9 +1558,22 @@
 
     function loadCreditCardInstallments() {
       try {
-        return JSON.parse(localStorage.getItem(installmentStorageKey)) || [];
+        const saved = JSON.parse(localStorage.getItem(installmentStorageKey) || "[]");
+        const records = Array.isArray(saved) ? saved : [];
+        const imported = localStorage.getItem(installmentImportKey) === "true";
+
+        if (!imported) {
+          const existingIds = new Set(records.map((item) => item.id));
+          const importedRecords = defaultCreditCardInstallments.filter((item) => !existingIds.has(item.id));
+          const mergedRecords = [...importedRecords, ...records];
+          localStorage.setItem(installmentImportKey, "true");
+          localStorage.setItem(installmentStorageKey, JSON.stringify(mergedRecords));
+          return mergedRecords;
+        }
+
+        return records;
       } catch (error) {
-        return [];
+        return defaultCreditCardInstallments;
       }
     }
 
@@ -1532,7 +1608,7 @@
     function renderCreditCardInstallments() {
       const activeInstallments = creditCardInstallments.filter((item) => item.totalTerms > item.paidTerms);
       const summary = activeInstallments.reduce((acc, item) => {
-        const monthlyAmount = item.totalAmount / item.totalTerms;
+        const monthlyAmount = item.monthlyAmount || item.totalAmount / item.totalTerms;
         const remainingTerms = item.totalTerms - item.paidTerms;
         acc.monthlyTotal += monthlyAmount;
         acc.remainingTotal += monthlyAmount * remainingTerms;
@@ -1548,7 +1624,7 @@
       fields.installmentEmpty.style.display = activeInstallments.length ? "none" : "block";
 
       fields.installmentBody.innerHTML = activeInstallments.map((item) => {
-        const monthlyAmount = item.totalAmount / item.totalTerms;
+        const monthlyAmount = item.monthlyAmount || item.totalAmount / item.totalTerms;
         const remainingTerms = item.totalTerms - item.paidTerms;
         const remainingAmount = monthlyAmount * remainingTerms;
         const finalDue = addMonths(item.nextDue, remainingTerms - 1);
