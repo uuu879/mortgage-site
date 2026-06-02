@@ -433,6 +433,29 @@
       color: var(--ink);
     }
 
+    .insurance-max {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+      padding-top: 8px;
+      border-top: 1px solid #edf0ed;
+    }
+
+    .insurance-max span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .insurance-max strong {
+      display: block;
+      color: var(--accent);
+      font-size: clamp(26px, 4vw, 38px);
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
     .market-metric.highlight {
       background: var(--soft);
     }
@@ -1372,6 +1395,14 @@
           <li><strong>指定卡保費分期</strong><span>38,671 元，06/06 期，本期 6,445 元</span></li>
           <li><strong>遠雄續期保費８</strong><span>11,802 元，06/06 期，本期 1,967 元</span></li>
         </ul>
+      </section>
+
+      <section class="panel installment-note-panel" aria-label="保險分期最大金額">
+        <h3>保險分期最大金額</h3>
+        <div class="insurance-max">
+          <span>目前記錄最高單筆保險分期為「指定卡保費分期」，總金額 38,671 元，115/05/14 帳單已到 06/06 期。</span>
+          <strong>$38,671</strong>
+        </div>
       </section>
     </section>
   </main>
