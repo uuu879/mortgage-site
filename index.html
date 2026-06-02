@@ -394,12 +394,6 @@
       text-align: left;
     }
 
-    .installment-actions {
-      display: inline-flex;
-      justify-content: end;
-      gap: 8px;
-    }
-
     .installment-note-panel {
       margin-top: 18px;
       padding: 16px 18px;
@@ -1361,7 +1355,6 @@
                   <th>剩餘期數</th>
                   <th>未到期</th>
                   <th>下一期</th>
-                  <th>操作</th>
                 </tr>
               </thead>
               <tbody id="installmentBody"></tbody>
@@ -1454,6 +1447,7 @@
     const installmentStorageKey = "personalFinanceCreditCardInstallments";
     const installmentImportKey = "personalFinanceCreditCardInstallmentsImported20260514";
     const accessoryInstallmentImportKey = "personalFinanceCreditCardInstallmentsImportedAccessories20260602";
+    const installmentMonthlyUpdateKey = "personalFinanceCreditCardInstallmentsLastMonthlyUpdate";
     const defaultCreditCardInstallments = [
       {
         id: "seed-20260514-pxmart-taitung",
@@ -1690,6 +1684,57 @@
       return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}`;
     }
 
+    function monthKeyFromDate(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function monthIndex(monthValue) {
+      if (!monthValue) return null;
+      const [year, month] = monthValue.split("-").map(Number);
+      if (!year || !month) return null;
+      return year * 12 + month - 1;
+    }
+
+    function monthKeyFromIndex(index) {
+      const year = Math.floor(index / 12);
+      const month = index % 12 + 1;
+      return `${year}-${String(month).padStart(2, "0")}`;
+    }
+
+    function applyMonthlyInstallmentUpdate(today = new Date()) {
+      if (today.getDate() < 25) return;
+
+      const currentMonthKey = monthKeyFromDate(today);
+      if (localStorage.getItem(installmentMonthlyUpdateKey) === currentMonthKey) return;
+
+      const currentIndex = monthIndex(currentMonthKey);
+      let changed = false;
+
+      creditCardInstallments = creditCardInstallments.map((item) => {
+        if (item.totalTerms <= item.paidTerms) return item;
+
+        const dueIndex = monthIndex(item.nextDue);
+        if (dueIndex === null || dueIndex > currentIndex) return item;
+
+        const periodsToApply = Math.min(
+          currentIndex - dueIndex + 1,
+          item.totalTerms - item.paidTerms
+        );
+
+        if (periodsToApply <= 0) return item;
+        changed = true;
+        return {
+          ...item,
+          paidTerms: item.paidTerms + periodsToApply,
+          nextDue: monthKeyFromIndex(dueIndex + periodsToApply),
+          updatedAt: today.toISOString()
+        };
+      });
+
+      if (changed) persistCreditCardInstallments();
+      localStorage.setItem(installmentMonthlyUpdateKey, currentMonthKey);
+    }
+
     function renderCreditCardInstallments() {
       const activeInstallments = creditCardInstallments.filter((item) => item.totalTerms > item.paidTerms);
       const summary = activeInstallments.reduce((acc, item) => {
@@ -1721,12 +1766,6 @@
             <td>${integer.format(remainingTerms)} / ${integer.format(item.totalTerms)}</td>
             <td>${money.format(remainingAmount)}</td>
             <td>${item.nextDue.replace("-", "/")} - ${finalDue}</td>
-            <td>
-              <span class="installment-actions">
-                <button class="secondary-button" type="button" data-installment-action="pay" data-id="${item.id}">繳一期</button>
-                <button class="danger-button" type="button" data-installment-action="delete" data-id="${item.id}">刪除</button>
-              </span>
-            </td>
           </tr>
         `;
       }).join("");
@@ -1771,25 +1810,6 @@
       installmentTermsInput.value = "12";
       installmentPaidTermsInput.value = "0";
       installmentNextDueInput.value = getDefaultNextDueMonth();
-    }
-
-    function updateCreditCardInstallment(id, action) {
-      const index = creditCardInstallments.findIndex((item) => item.id === id);
-      if (index === -1) return;
-
-      if (action === "delete") {
-        creditCardInstallments.splice(index, 1);
-      }
-      if (action === "pay") {
-        creditCardInstallments[index].paidTerms += 1;
-        creditCardInstallments[index].nextDue = addMonths(creditCardInstallments[index].nextDue, 1).replace("/", "-");
-        if (creditCardInstallments[index].paidTerms >= creditCardInstallments[index].totalTerms) {
-          creditCardInstallments.splice(index, 1);
-        }
-      }
-
-      persistCreditCardInstallments();
-      renderCreditCardInstallments();
     }
 
     function loadSavedMarketPrice() {
@@ -2120,11 +2140,6 @@
     savePlanButton.addEventListener("click", saveCurrentPlan);
     saveMarketPriceButton.addEventListener("click", saveMarketPrice);
     installmentForm.addEventListener("submit", saveCreditCardInstallment);
-    fields.installmentBody.addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-installment-action]");
-      if (!button) return;
-      updateCreditCardInstallment(button.dataset.id, button.dataset.installmentAction);
-    });
     fields.savedPlans.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
@@ -2136,6 +2151,7 @@
     renderSavedPlans();
     renderSavedMarketPrice();
     installmentNextDueInput.value = getDefaultNextDueMonth();
+    applyMonthlyInstallmentUpdate();
     renderCreditCardInstallments();
     calculate();
   </script>
